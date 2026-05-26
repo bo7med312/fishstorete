@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReportLog — Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #080c10;
+  --surface:   #0e1318;
+  --surface2:  #141a21;
+  --border:    #1d2530;
+  --border2:   #253040;
+  --text:      #d4dde8;
+  --muted:     #556070;
+  --accent:    #00d4ff;
+  --accent2:   #0097b5;
+  --red:       #ff4a4a;
+  --orange:    #ff8c42;
+  --yellow:    #ffd166;
+  --green:     #06d6a0;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'Syne', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── LAYOUT ── */
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+
+.logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,151,181,0.08));
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+}
+.logo-badge span { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+.logo h1 { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+.logo p  { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+.nav { padding: 16px 12px; flex: 1; }
+.nav-section { margin-bottom: 20px; }
+.nav-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 7px;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--muted); transition: all 0.15s;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+}
+.nav-item:hover  { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(0,212,255,0.08); color: var(--accent); border-color: rgba(0,212,255,0.2); }
+.nav-item .icon  { font-size: 15px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto; background: var(--red);
+  color: #fff; font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.connection-dot {
+  display: inline-block; width: 6px; height: 6px;
+  background: var(--green); border-radius: 50%;
+  margin-right: 6px; animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+
+/* ── MAIN ── */
+.main { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar h2 { font-size: 16px; font-weight: 700; color: #fff; flex: 1; }
+.topbar-actions { display: flex; gap: 10px; }
+
+.search-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-box:focus { border-color: var(--accent2); }
+.search-box::placeholder { color: var(--muted); }
+
+.btn {
+  padding: 7px 16px; border-radius: 7px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  border: 1px solid; transition: all 0.15s; font-family: var(--sans);
+  letter-spacing: 0.3px;
+}
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--accent2); color: var(--accent); }
+.btn-accent { background: rgba(0,212,255,0.1); border-color: var(--accent2); color: var(--accent); }
+.btn-accent:hover { background: rgba(0,212,255,0.2); }
+
+/* ── CONTENT ── */
+.content { padding: 24px 28px; flex: 1; }
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card.c-open::before   { background: var(--red); }
+.stat-card.c-prog::before   { background: var(--orange); }
+.stat-card.c-closed::before { background: var(--green); }
+.stat-card.c-total::before  { background: var(--accent); }
+
+.stat-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.stat-value { font-size: 32px; font-weight: 800; color: #fff; margin: 4px 0 2px; line-height: 1; }
+.stat-sub   { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* ── FILTERS ── */
+.filters {
+  display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border); color: var(--muted);
+  background: var(--surface); transition: all 0.15s; font-family: var(--sans);
+}
+.filter-btn:hover { border-color: var(--border2); color: var(--text); }
+.filter-btn.active { border-color: var(--accent2); color: var(--accent); background: rgba(0,212,255,0.08); }
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface2); }
+th {
+  padding: 10px 16px; font-size: 10px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+  text-align: left; border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 12px 16px; font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+tr { cursor: pointer; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 700;
+  font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-open     { background: rgba(255,74,74,0.12); color: var(--red); border: 1px solid rgba(255,74,74,0.3); }
+.badge-progress { background: rgba(255,140,66,0.12); color: var(--orange); border: 1px solid rgba(255,140,66,0.3); }
+.badge-closed   { background: rgba(6,214,160,0.12); color: var(--green); border: 1px solid rgba(6,214,160,0.3); }
+
+.pri-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px;
+}
+.pri-low      { background: var(--green); }
+.pri-medium   { background: var(--yellow); }
+.pri-high     { background: var(--orange); }
+.pri-critical { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+.cat-tag {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-family: var(--mono);
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  justify-content: center; align-items: center; padding: 24px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  width: 100%; max-width: 780px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  animation: modalIn 0.2s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.modal-id {
+  font-family: var(--mono); font-size: 20px; font-weight: 500;
+  color: var(--accent); min-width: 70px;
+}
+.modal-title-block { flex: 1; }
+.modal-title { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.3; }
+.modal-meta  { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 4px; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { color: #fff; background: var(--surface2); }
+
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.info-item label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+.info-item span  { font-size: 13px; font-family: var(--mono); color: var(--text); }
+
+.desc-box {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px;
+  font-size: 13px; line-height: 1.7; color: var(--text);
+}
+
+.section-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.recording-timeline {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px;
+  max-height: 200px; overflow-y: auto;
+  font-family: var(--mono); font-size: 11px;
+}
+.snap-row {
+  display: flex; gap: 12px; align-items: baseline;
+  padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.snap-time { color: var(--accent2); min-width: 85px; }
+.snap-pos  { color: var(--muted); flex: 1; }
+.snap-info { color: var(--yellow); }
+
+.action-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.status-select {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); padding: 7px 12px; border-radius: 7px;
+  font-size: 13px; font-family: var(--sans); outline: none; cursor: pointer;
+}
+.notes-area {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; color: var(--text);
+  font-size: 13px; font-family: var(--sans); outline: none;
+  resize: vertical; min-height: 70px; transition: border-color 0.15s;
+}
+.notes-area:focus { border-color: var(--accent2); }
+
+/* ── LOGIN SCREEN ── */
+.login-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.login-card {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 40px; width: 380px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.login-card h1 { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.login-card p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+.login-field label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.login-field input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 7px; padding: 10px 14px; color: var(--text); font-size: 14px;
+  font-family: var(--sans); outline: none; transition: border-color 0.15s;
+  margin-bottom: 14px;
+}
+.login-field input:focus { border-color: var(--accent2); }
+.btn-login {
+  width: 100%; padding: 11px; background: var(--accent2);
+  border: none; border-radius: 7px; color: #fff; font-size: 14px;
+  font-weight: 700; cursor: pointer; font-family: var(--sans);
+  transition: background 0.15s; letter-spacing: 0.5px;
+}
+.btn-login:hover { background: var(--accent); color: #000; }
+.login-error { color: var(--red); font-size: 12px; margin-top: 10px; text-align: center; font-family: var(--mono); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  padding: 60px; text-align: center; color: var(--muted);
+}
+.empty-state .big { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ── Loading ── */
+.spinner {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-row td { text-align: center; padding: 40px; }
+
+/* ── Settings tab ── */
+.settings-panel { max-width: 500px; }
+.settings-row {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px;
+}
+.settings-row label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.settings-row input {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: 9px 14px; color: var(--text);
+  font-size: 13px; font-family: var(--mono); outline: none;
+  transition: border-color 0.15s;
+}
+.settings-row input:focus { border-color: var(--accent2); }
+.save-btn {
+  background: var(--accent2); border: none; border-radius: 7px;
+  padding: 9px 20px; color: #fff; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: var(--sans); transition: background 0.15s;
+}
+.save-btn:hover { background: var(--accent); color: #000; }
+.settings-info {
+  background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 8px; padding: 14px 16px; font-size: 12px;
+  color: var(--muted); line-height: 1.7; margin-top: 20px; font-family: var(--mono);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div style="font-size:32px; margin-bottom:14px;">🛡️</div>
+    <h1>ReportLog</h1>
+    <p>Admin Dashboard — Enter your credentials</p>
+    <div class="login-field">
+      <label>Server API URL</label>
+      <input type="text" id="api-url" placeholder="http://YOUR_IP:30120" />
+      <label>API Secret Key</label>
+      <input type="password" id="api-key" placeholder="••••••••••••••••" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Connect Dashboard</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN SHELL ═══════════ -->
+<div class="shell" id="app-shell" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-badge"><span>🛡 ReportLog</span></div>
+      <h1>Admin Panel</h1>
+      <p id="server-label">Connecting…</p>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-label">Dashboard</div>
+        <div class="nav-item active" onclick="showTab('reports')" id="nav-reports">
+          <span class="icon">📋</span> Reports
+          <span class="nav-badge" id="open-badge">0</span>
+        </div>
+        <div class="nav-item" onclick="showTab('recordings')" id="nav-recordings">
+          <span class="icon">🎥</span> Recordings
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Config</div>
+        <div class="nav-item" onclick="showTab('settings')" id="nav-settings">
+          <span class="icon">⚙️</span> Settings
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="connection-dot"></span>
+      <span id="last-refresh">–</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <h2 id="topbar-title">Reports</h2>
+      <div class="topbar-actions">
+        <input type="text" class="search-box" id="search-input" placeholder="Search reports…" oninput="filterReports()">
+        <button class="btn btn-ghost" onclick="loadReports()">↺ Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── REPORTS TAB ── -->
+      <div id="tab-reports">
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card c-open">
+            <div class="stat-label">Open</div>
+            <div class="stat-value" id="stat-open">–</div>
+            <div class="stat-sub">needs attention</div>
+          </div>
+          <div class="stat-card c-prog">
+            <div class="stat-label">In Progress</div>
+            <div class="stat-value" id="stat-prog">–</div>
+            <div class="stat-sub">being handled</div>
+          </div>
+          <div class="stat-card c-closed">
+            <div class="stat-label">Closed</div>
+            <div class="stat-value" id="stat-closed">–</div>
+            <div class="stat-sub">resolved</div>
+          </div>
+          <div class="stat-card c-total">
+            <div class="stat-label">Total</div>
+            <div class="stat-value" id="stat-total">–</div>
+            <div class="stat-sub">all time</div>
+          </div>
+        </div>
+
+        <div class="filters" id="filter-bar">
+          <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+          <button class="filter-btn" onclick="setFilter('open',this)">Open</button>
+          <button class="filter-btn" onclick="setFilter('in_progress',this)">In Progress</button>
+          <button class="filter-btn" onclick="setFilter('closed',this)">Closed</button>
+          <button class="filter-btn" onclick="setFilter('critical',this)">🔴 Critical</button>
+          <button class="filter-btn" onclick="setFilter('high',this)">🟠 High</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Reporter</th>
+                <th>Reported</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="report-table-body">
+              <tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── RECORDINGS TAB ── -->
+      <div id="tab-recordings" style="display:none">
+        <div class="section-title">Player Recordings (last 20 min)</div>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <input type="text" id="rec-cid" class="search-box" placeholder="Enter Citizen ID…" style="width:240px">
+          <button class="btn btn-accent" onclick="loadRecording()">Load Recording</button>
+        </div>
+        <div id="rec-output">
+          <div class="empty-state"><div class="big">🎥</div><p>Enter a Citizen ID to view their activity recording</p></div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS TAB ── -->
+      <div id="tab-settings" style="display:none">
+        <div class="settings-panel">
+          <div class="section-title" style="margin-bottom:20px">Connection Settings</div>
+          <div class="settings-row">
+            <label>Server API URL</label>
+            <input type="text" id="s-url" placeholder="http://YOUR_IP:30120">
+          </div>
+          <div class="settings-row">
+            <label>API Secret Key</label>
+            <input type="password" id="s-key" placeholder="••••••••••••••••">
+          </div>
+          <button class="save-btn" onclick="saveSettings()">Save & Reconnect</button>
+
+          <div class="settings-info">
+            ⚙️  These settings are saved in localStorage.<br>
+            🔑  The API key must match <code>Config.WebSecret</code> in <code>config.lua</code>.<br>
+            🌐  API URL format: <code>http://&lt;server_ip&gt;:30120</code><br>
+            📡  All API calls go to <code>/reportlog/*</code> on your FiveM port.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════ REPORT MODAL ═══════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-id" id="m-id">#—</div>
+      <div class="modal-title-block">
+        <div class="modal-title" id="m-title">—</div>
+        <div class="modal-meta" id="m-meta">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid" id="m-info-grid"></div>
+
+      <div>
+        <div class="section-title">Description</div>
+        <div class="desc-box" id="m-desc">—</div>
+      </div>
+
+      <div id="m-recording-section" style="display:none">
+        <div class="section-title">Activity Recording (last 20 min)</div>
+        <div class="recording-timeline" id="m-recording">Loading…</div>
+      </div>
+
+      <div>
+        <div class="section-title">Admin Actions</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="action-row">
+            <select class="status-select" id="m-status-sel">
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="closed">Closed</option>
+            </select>
+            <button class="btn btn-accent" onclick="updateStatus()">Update Status</button>
+            <button class="btn btn-ghost" onclick="loadReporterRecording()">🎥 Load Recording</button>
+          </div>
+          <textarea class="notes-area" id="m-notes" placeholder="Admin notes…"></textarea>
+          <div>
+            <button class="btn btn-accent" onclick="saveNote()">💾 Save Notes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  State
+// ================================================================
+let API_URL = '';
+let API_KEY = '';
+let allReports = [];
+let activeFilter = 'all';
+let currentReport = null;
+
+// ── Boot ─────────────────────────────────────────────────────────
+window.onload = function() {
+  API_URL = localStorage.getItem('rl_url') || '';
+  API_KEY = localStorage.getItem('rl_key') || '';
+  if (API_URL && API_KEY) {
+    bootApp();
+  }
+};
+
+function doLogin() {
+  API_URL = document.getElementById('api-url').value.trim().replace(/\/+$/, '');
+  API_KEY = document.getElementById('api-key').value.trim();
+  if (!API_URL || !API_KEY) {
+    document.getElementById('login-error').textContent = 'Please fill in all fields.';
+    return;
+  }
+  bootApp();
+}
+
+async function bootApp() {
+  try {
+    const res = await apiFetch('/reportlog/reports');
+    if (!res.ok && res.status === 401) throw new Error('Bad key');
+    localStorage.setItem('rl_url', API_URL);
+    localStorage.setItem('rl_key', API_KEY);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'grid';
+    document.getElementById('server-label').textContent = new URL(API_URL).host;
+    document.getElementById('s-url').value = API_URL;
+    document.getElementById('s-key').value = API_KEY;
+    loadReports();
+    setInterval(loadReports, 30000);
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Connection failed. Check URL and key.';
+  }
+}
+
+// ── API ──────────────────────────────────────────────────────────
+function apiFetch(path, opts = {}) {
+  return fetch(API_URL + path, {
+    ...opts,
+    headers: {
+      'x-reportlog-token': API_KEY,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+}
+
+// ── Load Reports ─────────────────────────────────────────────────
+async function loadReports() {
+  try {
+    const res  = await apiFetch('/reportlog/reports');
+    allReports = await res.json();
+    updateStats();
+    renderTable();
+    document.getElementById('last-refresh').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('report-table-body').innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:#f85149;padding:30px">⚠ Failed to load reports</td></tr>';
+  }
+}
+
+function updateStats() {
+  const open   = allReports.filter(r => r.status === 'open').length;
+  const prog   = allReports.filter(r => r.status === 'in_progress').length;
+  const closed = allReports.filter(r => r.status === 'closed').length;
+  document.getElementById('stat-open').textContent   = open;
+  document.getElementById('stat-prog').textContent   = prog;
+  document.getElementById('stat-closed').textContent = closed;
+  document.getElementById('stat-total').textContent  = allReports.length;
+  document.getElementById('open-badge').textContent  = open;
+}
+
+function getFiltered() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  return allReports.filter(r => {
+    const matchFilter = activeFilter === 'all' ? true
+      : activeFilter === 'critical' ? r.priority === 'critical'
+      : activeFilter === 'high'     ? r.priority === 'high'
+      : r.status === activeFilter;
+    const matchSearch = !q || r.title.toLowerCase().includes(q)
+      || (r.reporter_name || '').toLowerCase().includes(q)
+      || (r.reported_name || '').toLowerCase().includes(q)
+      || String(r.id).includes(q);
+    return matchFilter && matchSearch;
+  });
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  const tbody = document.getElementById('report-table-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="big">🗂️</div><p>No reports match this filter</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr onclick="openModal(${r.id})">
+      <td style="font-family:var(--mono);color:var(--accent2)">#${r.id}</td>
+      <td><span class="cat-tag">${r.category}</span></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.title)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${esc(r.reporter_name||'–')}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${esc(r.reported_name||'–')}</td>
+      <td><span class="pri-dot pri-${r.priority}"></span>${r.priority}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${fmtDate(r.created_at)}</td>
+    </tr>
+  `).join('');
+}
+
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+
+function filterReports() { renderTable(); }
+
+// ── Modal ────────────────────────────────────────────────────────
+async function openModal(id) {
+  currentReport = null;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('m-id').textContent    = '#' + id;
+  document.getElementById('m-title').textContent = 'Loading…';
+  document.getElementById('m-meta').textContent  = '';
+  document.getElementById('m-desc').textContent  = '';
+  document.getElementById('m-info-grid').innerHTML = '';
+  document.getElementById('m-recording-section').style.display = 'none';
+
+  const res    = await apiFetch('/reportlog/report/' + id);
+  const report = await res.json();
+  currentReport = report;
+
+  document.getElementById('m-title').textContent = report.title;
+  document.getElementById('m-meta').textContent  =
+    `${report.category} · ${report.priority} priority · ${fmtDate(report.created_at)}`;
+
+  document.getElementById('m-info-grid').innerHTML = `
+    <div class="info-item"><label>Reporter</label><span>${esc(report.reporter_name)} <span style="color:var(--muted)">(${report.reporter_id})</span></span></div>
+    <div class="info-item"><label>Reported</label><span>${report.reported_name ? esc(report.reported_name)+' <span style="color:var(--muted)">('+report.reported_id+')</span>' : '—'}</span></div>
+    <div class="info-item"><label>Status</label><span>${statusBadge(report.status)}</span></div>
+    <div class="info-item"><label>Coords</label><span style="font-size:11px">${esc(report.coords||'–')}</span></div>
+    <div class="info-item"><label>Assigned To</label><span>${esc(report.assigned_to||'Unassigned')}</span></div>
+    <div class="info-item"><label>Closed At</label><span>${report.closed_at ? fmtDate(report.closed_at) : '–'}</span></div>
+  `;
+
+  document.getElementById('m-desc').textContent = report.description;
+  document.getElementById('m-status-sel').value = report.status;
+  document.getElementById('m-notes').value      = report.admin_notes || '';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentReport = null;
+}
+
+async function updateStatus() {
+  if (!currentReport) return;
+  const status = document.getElementById('m-status-sel').value;
+  await apiFetch('/reportlog/report/' + currentReport.id + '/status', {
+    method: 'POST',
+    body: JSON.stringify({ status }),
+  });
+  loadReports();
+  alert('Status updated to: ' + status);
+}
+
+async function saveNote() {
+  if (!currentReport) return;
+  const note = document.getElementById('m-notes').value;
+  await apiFetch('/reportlog/report/' + currentReport.id + '/note', {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+  alert('Notes saved!');
+}
+
+async function loadReporterRecording() {
+  if (!currentReport) return;
+  const cid = currentReport.reporter_id;
+  const sec = document.getElementById('m-recording-section');
+  const box = document.getElementById('m-recording');
+  sec.style.display = '';
+  box.innerHTML     = '<span class="spinner"></span> Loading recording…';
+
+  try {
+    const res  = await apiFetch('/reportlog/recording/' + cid);
+    const snaps = await res.json();
+    if (!snaps.length) { box.innerHTML = '<span style="color:var(--muted)">No recording data found.</span>'; return; }
+    box.innerHTML = snaps.map(s => {
+      const t   = s.recorded_at || new Date(s.ts * 1000).toLocaleTimeString();
+      const pos = s.pos ? `${s.pos.x}, ${s.pos.y}, ${s.pos.z}` : '–';
+      const extra = [
+        s.hp != null ? `HP:${s.hp}` : '',
+        s.inVeh ? `🚗` : '',
+        s.veh?.plate ? `[${s.veh.plate}]` : '',
+      ].filter(Boolean).join(' ');
+      return `<div class="snap-row"><span class="snap-time">${t}</span><span class="snap-pos">${pos}</span><span class="snap-info">${extra}</span></div>`;
+    }).join('');
+  } catch(e) {
+    box.innerHTML = '<span style="color:var(--red)">Failed to load recording.</span>';
+  }
+}
+
+// ── Recordings tab ────────────────────────────────────────────────
+async function loadRecording() {
+  const cid = document.getElementById('rec-cid').value.trim();
+  if (!cid) return;
+  const out = document.getElementById('rec-output');
+  out.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>Loading…</p></div>';
+
+  try {
+    const res   = await apiFetch('/reportlog/recording/' + cid);
+    const snaps = await res.json();
+    if (!snaps.length) {
+      out.innerHTML = '<div class="empty-state"><div class="big">🎥</div><p>No recording data found for this player in the last 20 minutes.</p></div>';
+      return;
+    }
+    out.innerHTML = `
+      <div class="table-wrap">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:12px; color:var(--muted)">
+          ${snaps.length} snapshots for <span style="color:var(--accent)">${cid}</span>
+        </div>
+        <div class="recording-timeline" style="max-height:500px">
+          ${snaps.map(s => {
+            const t   = s.recorded_at || new Date(s.ts * 1000).toLocaleTimeString();
+            const pos = s.pos ? `${s.pos.x}, ${s.pos.y}, ${s.pos.z}` : '–';
+            const extra = [
+              s.hp != null ? `HP:${s.hp}` : '',
+              s.armour != null ? `ARM:${s.armour}` : '',
+              s.inVeh ? '🚗 In vehicle' : '',
+              s.veh?.plate ? `Plate: ${s.veh.plate}` : '',
+              s.veh?.speed != null ? `${s.veh.speed}km/h` : '',
+            ].filter(Boolean).join(' | ');
+            return `<div class="snap-row"><span class="snap-time">${t}</span><span class="snap-pos">${pos}</span><span class="snap-info">${extra}</span></div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } catch(e) {
+    out.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><p>Failed to load recording.</p></div>';
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function showTab(tab) {
+  ['reports','recordings','settings'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === tab ? '' : 'none';
+    document.getElementById('nav-'+t)?.classList.toggle('active', t === tab);
+  });
+  document.getElementById('topbar-title').textContent =
+    tab === 'reports' ? 'Reports' : tab === 'recordings' ? 'Recordings' : 'Settings';
+}
+
+// ── Settings ──────────────────────────────────────────────────────
+function saveSettings() {
+  API_URL = document.getElementById('s-url').value.trim().replace(/\/+$/,'');
+  API_KEY = document.getElementById('s-key').value.trim();
+  localStorage.setItem('rl_url', API_URL);
+  localStorage.setItem('rl_key', API_KEY);
+  bootApp();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function statusBadge(s) {
+  const map = { open:'badge-open', in_progress:'badge-progress', closed:'badge-closed' };
+  const cls = map[s] || 'badge-open';
+  return `<span class="badge ${cls}">${s.replace('_',' ')}</span>`;
+}
+function fmtDate(d) {
+  if (!d) return '–';
+  const dt = new Date(d);
+  return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+</script>
+</body>
+</html>
